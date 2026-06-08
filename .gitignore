@@ -1,0 +1,18 @@
+# Virtual environment
+venv/
+*.pyc
+__pycache__/
+
+# Secrets
+.env
+
+# Vector DB (locally generated)
+chroma_db/
+
+data/*.pdf
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
