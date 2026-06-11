@@ -4,11 +4,11 @@ def get_embedding_model():
 
     """
     Free HuggingFace embedding model returns a 384-dimensional vector for each input text. 
-    The model is "sentence-transformers/all-MiniLM-L6-v2". 
+    The model is "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2". 
     """
 
     embeddings =  HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2"
+        model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
     )
     return embeddings
 

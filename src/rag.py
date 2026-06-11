@@ -132,6 +132,9 @@ Guidelines:
 - For document questions, answer based ONLY on the Context.
 - If a document question's answer isn't in the Context, say 
   "I couldn't find that in the document."
+- The document may be in English or Bengali. Understand the content 
+  regardless of language, and answer in the same language as the user's question.
+  
 
 Conversation History:
 {history}
