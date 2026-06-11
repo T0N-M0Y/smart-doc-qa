@@ -8,7 +8,7 @@ def get_embedding_model():
     """
 
     embeddings =  HuggingFaceEmbeddings(
-        model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+        model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
     )
     return embeddings
 
