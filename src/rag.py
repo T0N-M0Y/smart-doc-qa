@@ -63,68 +63,94 @@ def answer_question(vectorstore, question, k=3):
     answer = chain.invoke({"context": context, "question": question})
     return answer, retrieved_docs
 
-
-def answer_with_memory(vectorstore, question, chat_history, k=3):
+def rewrite_query(question, chat_history):
     """
-    Conversation memory with RAG; Chat History = Previous question-answer pairs. 
+    User এর প্রশ্নকে retrieval-friendly করে rewrite করে।
+    - Follow-up প্রশ্নে আগের context যোগ করে
+    - Vague শব্দ expand করে
     """
-    
-    summary_keywords = ["summarize", "summary", "tell me about", "overview", "what is this"]
-    if any(kw in question.lower() for kw in summary_keywords):
-        k = 6 
+    # History না থাকলে আর প্রশ্ন বড় হলে — rewrite এর দরকার কম
+    history_text = ""
+    for turn in chat_history[-3:]:  # শুধু শেষ ৩ turn (token বাঁচাতে)
+        history_text += f"User: {turn['question']}\n"
+        history_text += f"Assistant: {turn['answer'][:150]}\n"
 
-    # 1. Retrieve
-    
-    retrieved_docs = vectorstore.similarity_search(
-        question,
-        k=k
-    )
+    rewrite_prompt = """Given the conversation history and a follow-up 
+question, rewrite the question into a standalone search query that will 
+retrieve relevant information from a document.
+
+Rules:
+- Make it self-contained (resolve "he", "it", "that" using history)
+- Expand vague terms (e.g., "specialization" → "skills expertise field")
+- Keep it concise (one line)
+- Output ONLY the rewritten query, nothing else
+
+Conversation History:
+{history}
+
+Follow-up Question: {question}
+
+Standalone Search Query:"""
+
+    prompt = ChatPromptTemplate.from_template(rewrite_prompt)
+    llm = get_llm()
+    chain = prompt | llm | StrOutputParser()
+
+    rewritten = chain.invoke({
+        "history": history_text if history_text else "(none)",
+        "question": question,
+    })
+    return rewritten.strip()
+
+
+def answer_with_memory(vectorstore, question, chat_history, k=4):
+    """
+    Query rewriting সহ RAG।
+    """
+    # ১. Query Rewriting — retrieve করার আগে প্রশ্ন উন্নত করি
+    search_query = rewrite_query(question, chat_history)
+
+    # ২. Retrieve (rewritten query দিয়ে)
+    retrieved_docs = vectorstore.similarity_search(search_query, k=k)
     context = format_docs(retrieved_docs)
 
-    
-    # 2. History conversion to text
-    
+    # ৩. History কে text এ রূপান্তর
     history_text = ""
-
     for turn in chat_history:
         history_text += f"User: {turn['question']}\n"
         history_text += f"Assistant: {turn['answer']}\n"
 
-    # 3. Prompt এ history + context both push 
-    
+    # ৪. Answer generation (মূল প্রশ্ন দিয়ে, rewritten না)
     template = """You are a friendly assistant for a document Q&A system. 
-                    The "Context" below is content from a document the user uploaded.
+The "Context" below is content from a document the user uploaded.
 
-                    Guidelines:
-                    - If the user greets you (hi, hello) or asks who you are, respond warmly 
-                      and briefly explain you can answer questions about their uploaded document.
-                    - When the user refers to "the file", "the document", "this", or asks to 
-                      "summarize", they mean the uploaded document in the Context.
-                    - For document questions, answer based ONLY on the Context.
-                    - If a document question's answer isn't in the Context, say 
-                      "I couldn't find that in the document."
+Guidelines:
+- If the user greets you (hi, hello) or asks who you are, respond warmly 
+  and briefly explain you answer questions about their uploaded document.
+- When the user refers to "the file", "the document", "this", or asks to 
+  "summarize", they mean the uploaded document in the Context.
+- For document questions, answer based ONLY on the Context.
+- If a document question's answer isn't in the Context, say 
+  "I couldn't find that in the document."
 
-                    Conversation History:
-                    {history}
+Conversation History:
+{history}
 
-                    Context:
-                    {context}
+Context:
+{context}
 
-                    Question: {question}
+Question: {question}
 
-                    Answer:"""
+Answer:"""
 
-    
     prompt = ChatPromptTemplate.from_template(template)
-    
     llm = get_llm()
-    
     chain = prompt | llm | StrOutputParser()
 
     answer = chain.invoke({
         "history": history_text,
         "context": context,
-        "question": question,
+        "question": question,  # মূল প্রশ্ন — natural উত্তরের জন্য
     })
 
     return answer, retrieved_docs
