@@ -38,27 +38,33 @@ st.caption("Upload a PDF and ask questions — answers grounded in your document
 # ============================================
 # SIDEBAR — Upload
 # ============================================
+
 with st.sidebar:
     st.header("📤 Upload Document")
     uploaded_file = st.file_uploader("Choose a PDF", type=["pdf"])
 
-    if uploaded_file is not None:
-        if st.button("Process Document", use_container_width=True):
-            with st.spinner("Indexing document... ⏳"):
-                # Temp file এ save করি
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-                    tmp.write(uploaded_file.getvalue())
-                    tmp_path = tmp.name
+    # Button সবসময় দেখাই — file না থাকলে disabled
+    process_clicked = st.button(
+        "Process Document",
+        use_container_width=True,
+        disabled=(uploaded_file is None),
+    )
 
-                docs = load_pdf(tmp_path)
-                chunks = split_documents(docs)
-                st.session_state.vectorstore = create_vectorstore(
-                    chunks, embedding_model
-                )
-                st.session_state.messages = []
-                os.unlink(tmp_path)  # temp file মুছি
+    if process_clicked and uploaded_file is not None:
+        with st.spinner("Indexing document... ⏳"):
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+                tmp.write(uploaded_file.getvalue())
+                tmp_path = tmp.name
 
-                st.success(f"✅ Indexed: {len(docs)} pages, {len(chunks)} chunks")
+            docs = load_pdf(tmp_path)
+            chunks = split_documents(docs)
+            st.session_state.vectorstore = create_vectorstore(
+                chunks, embedding_model
+            )
+            st.session_state.messages = []
+            os.unlink(tmp_path)
+
+            st.success(f"✅ Indexed: {len(docs)} pages, {len(chunks)} chunks")
 
     st.divider()
     st.subheader("💡 Example Questions")
