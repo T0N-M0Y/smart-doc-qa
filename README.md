@@ -1,3 +1,14 @@
+---
+title: Smart Doc QA
+emoji: 📄
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 8501
+pinned: false
+short_description: RAG-based document Q&A with LangChain, ChromaDB & Groq
+---
+
 # smart-doc-qa
 
 A RAG-based document Q&A system. Upload any PDF and ask questions in natural language — get accurate, source-grounded answers.
