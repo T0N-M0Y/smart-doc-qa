@@ -103,7 +103,7 @@ Standalone Search Query:"""
     return rewritten.strip()
 
 
-def answer_with_memory(vectorstore, question, chat_history, k=4):
+def answer_with_memory(vectorstore, question, chat_history, k=6):
     """
     Query rewriting সহ RAG।
     """
@@ -127,13 +127,21 @@ The "Context" below is content from a document the user uploaded.
 Guidelines:
 - If the user greets you (hi, hello) or asks who you are, respond warmly 
   and briefly explain you answer questions about their uploaded document.
+
 - When the user refers to "the file", "the document", "this", or asks to 
   "summarize", they mean the uploaded document in the Context.
+
 - For document questions, answer based ONLY on the Context.
-- If a document question's answer isn't in the Context, say 
-  "I couldn't find that in the document."
-- The document may be in English or Bengali. Understand the content 
-  regardless of language, and answer in the same language as the user's question.
+
+- For document questions, answer based on the Context. Look carefully 
+  through ALL provided context sections before concluding information 
+  isn't there. Only say "I couldn't find that in the document" if the 
+  information is genuinely absent.
+
+- Answer in the SAME language as the document content in the Context. 
+  If the Context is in English, answer in English. If the document 
+  question is in a different language, you may still answer in the 
+  document's language.
   
 
 Conversation History:
